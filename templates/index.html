@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head><body>
+
+    <header>
+    <h1>The Vintage Collection</h1>
+</header>
+
+<div class="search-bar-container">
+    <input type="text" id="searchInput" placeholder="Search by description or price..." onkeyup="applyFiltersAndSearch()">
+</div>
+<nav class="filter-dashboard">
+    </nav>
+
+    <nav class="filter-dashboard">
+    {% for category in categories %}
+        <button class="filter-btn 
+                        {% if loop.first %}active{% endif %}" 
+                data-filter="{{ category }}">
+            {{ category | capitalize }}
+        </button>
+    {% endfor %}
+    </nav>
+
+    <div class="gallery-container">
+        
+        {% for item in items %}
+        <div class="gallery-item" data-category="{{ item.category }}">
+            
+            <img src="{{ url_for('static', filename='images/' + item.images[0]) }}" 
+                 alt="{{ item.description }}" 
+                 class="gallery-image"
+                 data-images="{{ item.images | join(',') }}"> <div class="item-info">
+                <h3>{{ item.description }}</h3>
+                <p class="price">{{ item.price }}</p>
+            </div>
+        </div>
+        {% endfor %}
+        
+    </div> <div id="myModal" class="modal">
+        <span class="close">&times;</span>
+        
+        <img class="modal-content" id="img01">
+        
+        <a class="prev">&#10094;</a>
+        <a class="next">&#10095;</a>
+    </div>
+
+
+    <script>
+        /* --- Global Variables for Modal --- */
+        let currentItemImages = []; // Will hold the images for the *active* item
+        let currentImageIndex = 0;  // Will track which image is showing
+
+        /* --- Get Modal Elements --- */
+        const modal = document.getElementById("myModal");
+        const modalImg = document.getElementById("img01");
+        const closeModal = document.getElementsByClassName("close")[0];
+
+        /* --- Get Filter/Search Elements --- */
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        const galleryItems = document.querySelectorAll('.gallery-item');
+        const searchInput = document.getElementById('searchInput');
+        
+        // Track the currently active category filter (default to 'all')
+        let activeCategory = 'all'; 
+
+        /* --- UNIFIED FILTER AND SEARCH FUNCTION --- */
+        function applyFiltersAndSearch() {
+            const searchTerm = searchInput.value.toLowerCase();
+            
+            galleryItems.forEach(item => {
+                const itemCategory = item.getAttribute('data-category');
+                // Get text from item-info children (h3 and p)
+                const itemDescription = item.querySelector('h3').textContent.toLowerCase();
+                const itemPrice = item.querySelector('.price').textContent.toLowerCase();
+                
+                // --- CATEGORY MATCH CHECK ---
+                const categoryMatch = activeCategory === 'all' || itemCategory === activeCategory;
+                
+                // --- SEARCH TERM CHECK ---
+                const searchMatch = itemDescription.includes(searchTerm) || itemPrice.includes(searchTerm);
+
+                // --- APPLY VISIBILITY (CSS handles the fade transition) ---
+                if (categoryMatch && searchMatch) {
+                    // Item matches: Fade in (opacity 0 -> 1, max-height 0 -> 500px)
+                    item.classList.remove('hide');
+                } else {
+                    // Item does not match: Fade out (opacity 1 -> 0, max-height 500px -> 0)
+                    item.classList.add('hide');
+                }
+            });
+        }
+        
+        /* --- Event Listener Setup --- */
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // 1. Update the active category variable
+                activeCategory = button.getAttribute('data-filter');
+
+                // 2. Update button styling
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                // 3. Apply the new category filter and the current search term
+                applyFiltersAndSearch();
+            });
+        });
+        
+        // --- Modal Logic (unchanged from previous step) ---
+        
+        // --- Open Modal Logic ---
+        const images = document.getElementsByClassName("gallery-image");
+        for (let img of images) {
+            img.onclick = function() {
+                modal.style.display = "block";
+                
+                const imageList = this.dataset.images;
+                currentItemImages = imageList.split(',');
+                
+                currentImageIndex = 0; 
+                updateModalImage();
+            }
+        }
+
+        // --- Close Modal Logic ---
+        closeModal.onclick = function() {
+            modal.style.display = "none";
+        }
+        modal.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        // --- Function to change the modal image ---
+        function updateModalImage() {
+            let imagePath = "{{ url_for('static', filename='images/') }}" + currentItemImages[currentImageIndex];
+            modalImg.src = imagePath;
+
+            // Show/hide arrows if at start/end of list
+            if (currentItemImages.length <= 1) {
+                document.querySelector('.prev').style.display = 'none';
+                document.querySelector('.next').style.display = 'none';
+            } else if (currentImageIndex === 0) {
+                document.querySelector('.prev').style.display = 'none';
+                document.querySelector('.next').style.display = 'block';
+            } else if (currentImageIndex === currentItemImages.length - 1) {
+                document.querySelector('.prev').style.display = 'block';
+                document.querySelector('.next').style.display = 'none';
+            } else {
+                document.querySelector('.prev').style.display = 'block';
+                document.querySelector('.next').style.display = 'block';
+            }
+        }
+
+        // --- Arrow Click Events ---
+        document.querySelector('.prev').onclick = function() {
+            if (currentImageIndex > 0) {
+                currentImageIndex--;
+                updateModalImage();
+            }
+        }
+
+        document.querySelector('.next').onclick = function() {
+            if (currentImageIndex < currentItemImages.length - 1) {
+                currentImageIndex++;
+                updateModalImage();
+            }
+        }
+        
+        // Initialize the filter/search to show all items on load
+        applyFiltersAndSearch();
+    </script>
+<footer>
+        <div class="contact-info">
+            <p>For inquiries, please contact us:</p>
+            <p>
+                Email: <a href="mailto:your-email@example.com">adhamius2@gmail.com</a>
+            </p>
+            <p>
+                Phone: +201222171992
+            </p>
+        </div>
+    </footer>
+    </body>
+</html>
+</body>
+</html>
